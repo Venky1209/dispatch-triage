@@ -1,23 +1,10 @@
----
-title: Dispatch Triage
-emoji: 🚑
-colorFrom: red
-colorTo: yellow
-sdk: docker
-pinned: false
-license: mit
-tags:
-  - openenv
-short_description: "108-Overload: Emergency Dispatch Simulator"
----
-
 <div align="center">
   <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,14,20&height=200&section=header&text=108-Overload&fontSize=50&animation=fadeIn&fontAlignY=35&desc=National%20Emergency%20Ambulance%20Dispatch%20Simulator&descAlignY=55&descAlign=50" alt="108-Overload Header" />
 </div>
 
 <br>
 
-## 🎬 Live Demo
+## ⯈ Live Demo
 <div align="center">
   <img src="https://raw.githubusercontent.com/Venky1209/dispatch-triage/main/demo.gif" alt="108-Overload Simulation Demo" width="100%" />
   <p><i>High-stakes HARD task simulation: MASS CASUALTY + MONSOON SURGE</i></p>
@@ -42,7 +29,7 @@ India's 108 emergency ambulance service handles **94,000+ calls per day**, respo
 
 ---
 
-## ⚡ At a Glance
+## ⎔ At a Glance
 
 | Item | Value |
 | :--- | :--- |
@@ -128,7 +115,7 @@ The agent receives a structured numeric snapshot of the dispatch center's live s
 
 ---
 
-## 🧠 Design Decisions
+## ⌬ Design Decisions
 
 **Why hidden state?** Real callers under panic over-report or under-report severity. An agent that trusts `caller_severity_vector` blindly will under-triage cardiac events (under-reported due to denial) and over-dispatch for minor trauma (over-reported due to fear). The `true_severity` gap forces the agent to learn calibrated triage.
 
@@ -150,7 +137,7 @@ The agent receives a structured numeric snapshot of the dispatch center's live s
 
 ---
 
-## 🌍 Real-World Impact Potential
+## ⊛ Real-World Impact Potential
 
 An RL agent trained in this environment could assist real dispatch coordinators in three concrete ways:
 
@@ -162,7 +149,7 @@ The SF edition of this hackathon saw medical/emergency projects dominate (Zero S
 
 ---
 
-## 📋 Sample Inference Output
+## ≡ Sample Inference Output
 
 ```
 [START] task=EASY env=overload_108 model=Qwen/Qwen2.5-72B-Instruct
@@ -183,7 +170,7 @@ The SF edition of this hackathon saw medical/emergency projects dominate (Zero S
 
 ---
 
-## ▶ Quick Start
+## ▷ Quick Start
 
 **1. Install dependencies:**
 ```bash
