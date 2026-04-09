@@ -96,6 +96,8 @@ The agent receives a structured numeric snapshot of the dispatch center's live s
 | `city_context` | `str` | `Enum` | Environmental stress state: `normal`, `monsoon_season`, `festival_day`, `disaster_zone`. |
 | `recent_dispatch_accuracy` | `float` | `0.0 - 1.0` | Rolling accuracy of recent triage decisions against hidden `true_severity`. |
 | `streak` | `int` | `0 - ∞` | Consecutive successful dispatches. |
+| `caller_panic` | `float` | `0.0 - 1.0` | Urgency state reported by the caller. Increases when queue > 15, decreases when en-route > 3. |
+| `district_load` | `Dict[str, float]` | `0.0 - 1.0` | Geographical load distributions across 5 districts. Drifts randomly ±0.05 per step. |
 
 ## ⚙ Action Space
 
@@ -103,14 +105,15 @@ The agent selects from 8 discrete dispatch operations, each with structured para
 
 | Action Type | Parameters | Description |
 | :--- | :--- | :--- |
-| `dispatch_ambulance` | `severity_category`, `priority_level`, `estimated_eta`, `backup_requested` | Deploy an ambulance. Priority must match `true_severity` for maximum reward. |
+| `dispatch_ambulance` | `severity_category`, `priority_level`, `estimated_eta`, `backup_requested`, `district` | Deploy an ambulance. `district` targeting yields +0.10 if highest load. Priority must match `true_severity` for maximum reward. |
 | `triage_call` | `assessed_severity`, `category`, `escalate` | Assess a caller. Reward scales with proximity to hidden `true_severity`. |
 | `handle_surge` | `redirect_to` | Redirect resources during active surge events. Options: `mutual_aid`, `defer_non_critical`, `request_backup`, `activate_protocol`. |
 | `manage_fatigue` | `style` | Address operator fatigue. Styles: `rotate_operator`, `take_micro_break`, `request_supervisor`. |
 | `escalate_incident` | `incident_type`, `notify` | Escalate to external agencies: `hospital`, `police`, `fire`, `disaster_management`. |
-| `defer_call` | `reason`, `callback_eta` | Defer a call. Penalized heavily if deferred call has high `true_severity`. |
-| `request_mutual_aid` | `from_district`, `severity_category` | Request ambulances from adjacent districts. Rewarded when fleet < 3, penalized when fleet > 10. |
-| `close_shift` | `handoff_quality` | End a shift block. `thorough` handoff with streak > 3 and fatigue < 0.6 yields maximum reward. |
+| `defer_call` | `reason`, `callback_eta` | Defer a call. Penalized heavily if deferred call has high `true_severity` or if `caller_panic` > 0.6. |
+| `request_mutual_aid` | `from_district`, `severity_category` | Request ambulances from adjacent districts. Reward (+0.20 base) scales up with `district_load` max values when fleet < 3, penalized when fleet > 10. |
+| `deescalate_caller` | None | Actively calms the caller, reducing `caller_panic` by 0.2 and yielding +0.10 reward. |
+| `close_shift` | `handoff_quality` | End a shift block. `thorough` handoff with streak > 3 and fatigue < 0.6 yields maximum reward and appends shift continuity notes. |
 
 ---
 
@@ -122,7 +125,8 @@ The agent selects from 8 discrete dispatch operations, each with structured para
 - **Triage Accuracy:** Assessing a call within 0.15 of `true_severity` yields +0.20. Under-triaging (assessed < true by > 0.2) penalizes -0.15.
 - **Cascade Prevention:** Successfully handling a surge event reduces `incident_cascade_risk` and yields +0.25. Ignoring an active surge penalizes -0.20.
 - **Fatigue Management:** Managing fatigue when > 0.7 yields +0.15, but every step where fatigue > 0.8 without management applies a passive -0.10 penalty.
-- **Shift Closure:** A thorough handoff with streak > 3 and fatigue < 0.6 yields the maximum +0.35. A poor handoff costs -0.20.
+- **Urgency & District Balancing:** Dispatching correctly to the highest-load district yields +0.10, and dispatching fast when `caller_panic > 0.7` adds an urgent response bonus points (+0.10).
+- **Shift Continuity:** A `thorough` `close_shift` generates shift notes, successfully closing the gap and reducing `response_time_pressure` by -0.05 on the succeeding shift `reset`.
 
 ---
 

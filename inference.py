@@ -22,7 +22,7 @@ except ImportError:
 
 try:
     import app as app_module
-    from env.graders import grade_task
+    from env.graders import grade_task, score_breakdown
     from env.models import (
         ACTION_TYPES,
         Overload108Action,
@@ -48,6 +48,7 @@ except Exception:
         "defer_call",
         "request_mutual_aid",
         "close_shift",
+        "deescalate_caller",
     )
     SEVERITY_CATEGORIES = (
         "cardiac",
@@ -88,6 +89,8 @@ except Exception:
         city_context: str = "normal"
         recent_dispatch_accuracy: float = 0.5
         streak: int = 0
+        caller_panic: float = 0.3
+        district_load: dict[str, float] = field(default_factory=lambda: {"north": 0.5, "south": 0.5, "east": 0.5, "west": 0.5, "central": 0.5})
 
         def model_copy(self, deep: bool = False) -> "Overload108Observation":
             return copy.deepcopy(self) if deep else copy.copy(self)
@@ -182,6 +185,8 @@ except Exception:
             city_context=str(s["city_context"]),
             recent_dispatch_accuracy=float(s["recent_dispatch_accuracy"]),
             streak=int(s["streak"]),
+            caller_panic=0.3,
+            district_load={"north": 0.5, "south": 0.5, "east": 0.5, "west": 0.5, "central": 0.5},
         )
 
     def list_task_names() -> tuple[str, ...]:
@@ -217,6 +222,9 @@ except Exception:
             + 0.10 * min(1.0, float(observation["streak"]) / 10.0)
         )
         return SimpleNamespace(score=score)
+
+    def score_breakdown(*args: Any, **kwargs: Any) -> dict[str, float]:
+        return {"mock_criterion": 0.5}
 
     class _FallbackRuntime:
         def __init__(self, task_name: str | None = None) -> None:
@@ -472,7 +480,7 @@ def _format_reward_list(values: list[float]) -> str:
     return ",".join(_format_reward(v) for v in values)
 
 
-def _run_episode(config: InferenceConfig) -> tuple[bool, int, float, list[float]]:
+def _run_episode(config: InferenceConfig) -> tuple[bool, int, float, list[float], dict[str, float]]:
     runtime = _task_state()
     state = runtime.reset(config.task_name)
     initial_observation = state.observation.model_copy(deep=True)
@@ -526,7 +534,17 @@ def _run_episode(config: InferenceConfig) -> tuple[bool, int, float, list[float]
         trajectory=trajectory,
         task_spec=get_task_spec(config.task_name),
     ).score
-    return bool(state.success), int(state.step_count), score, list(state.reward_history)
+
+    breakdown = score_breakdown(
+        task_name=config.task_name,
+        initial_state=initial_observation,
+        final_state=state.observation,
+        actions=actions,
+        trajectory=trajectory,
+        task_spec=get_task_spec(config.task_name),
+    )
+
+    return bool(state.success), int(state.step_count), score, list(state.reward_history), breakdown
 
 
 def _maybe_use_llm(config: InferenceConfig) -> None:
@@ -556,11 +574,13 @@ def main(argv: list[str] | None = None) -> int:
     for task_name in all_tasks:
         config.task_name = task_name
         print(f"[START] task={task_name} env={DEFAULT_ENV_NAME} model={config.model_name}", flush=True)
-        success, steps, score, rewards = _run_episode(config)
+        success, steps, score, rewards, breakdown = _run_episode(config)
         print(
             f"[END] success={str(success).lower()} steps={steps} score={score:.2f} rewards={_format_reward_list(rewards)}",
             flush=True,
         )
+        for criterion, cr_score in breakdown.items():
+            print(f"[BREAKDOWN] task={task_name} criterion={criterion} score={cr_score:.2f}", flush=True)
 
     return 0
 

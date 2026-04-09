@@ -75,7 +75,14 @@ ACTION_TYPES: tuple[str, ...] = (
     "defer_call",
     "request_mutual_aid",
     "close_shift",
+    "deescalate_caller",
 )
+
+DISTRICT_NAMES: tuple[str, ...] = ("north", "south", "east", "west", "central")
+
+DEFAULT_DISTRICT_LOAD: dict[str, float] = {
+    "north": 0.5, "south": 0.5, "east": 0.5, "west": 0.5, "central": 0.5,
+}
 
 TASK_NAMES: tuple[str, ...] = ("EASY", "MEDIUM", "HARD")
 
@@ -101,6 +108,8 @@ class Overload108Observation(BaseSchema):
     city_context: Literal["normal", "monsoon_season", "festival_day", "disaster_zone"] = "normal"
     recent_dispatch_accuracy: float = Field(ge=0.0, le=1.0, default=0.5)
     streak: int = Field(ge=0, default=0)
+    caller_panic: float = Field(ge=0.0, le=1.0, default=0.3)
+    district_load: dict[str, float] = Field(default_factory=lambda: dict(DEFAULT_DISTRICT_LOAD))
 
     @field_validator("caller_severity_vector")
     @classmethod
@@ -123,10 +132,18 @@ class Overload108Observation(BaseSchema):
             raise ValueError(f"unexpected event flags: {invalid}")
         return list(dict.fromkeys(value))
 
-    @field_validator("operator_fatigue", "response_time_pressure", "incident_cascade_risk", "recent_dispatch_accuracy")
+    @field_validator("operator_fatigue", "response_time_pressure", "incident_cascade_risk", "recent_dispatch_accuracy", "caller_panic")
     @classmethod
     def validate_unit_interval_fields(cls, value: float) -> float:
         return _clamp_unit_interval(value)
+
+    @field_validator("district_load")
+    @classmethod
+    def validate_district_load(cls, value: dict[str, float]) -> dict[str, float]:
+        normalized: dict[str, float] = {}
+        for district in DISTRICT_NAMES:
+            normalized[district] = _clamp_unit_interval(value.get(district, 0.5))
+        return normalized
 
 
 class Overload108FullState(BaseSchema):
@@ -144,6 +161,8 @@ class Overload108FullState(BaseSchema):
     city_context: Literal["normal", "monsoon_season", "festival_day", "disaster_zone"] = "normal"
     recent_dispatch_accuracy: float = Field(ge=0.0, le=1.0, default=0.5)
     streak: int = Field(ge=0, default=0)
+    caller_panic: float = Field(ge=0.0, le=1.0, default=0.3)
+    district_load: dict[str, float] = Field(default_factory=lambda: dict(DEFAULT_DISTRICT_LOAD))
 
     def to_observation(self) -> Overload108Observation:
         return Overload108Observation(
@@ -159,6 +178,8 @@ class Overload108FullState(BaseSchema):
             city_context=self.city_context,
             recent_dispatch_accuracy=self.recent_dispatch_accuracy,
             streak=self.streak,
+            caller_panic=self.caller_panic,
+            district_load=dict(self.district_load),
         )
 
 
@@ -172,6 +193,7 @@ class Overload108Action(BaseSchema):
         "defer_call",
         "request_mutual_aid",
         "close_shift",
+        "deescalate_caller",
     ]
     params: dict[str, Any] = Field(default_factory=dict)
 
@@ -242,6 +264,8 @@ __all__ = [
     "ACTION_TYPES",
     "Action",
     "BaseSchema",
+    "DEFAULT_DISTRICT_LOAD",
+    "DISTRICT_NAMES",
     "Observation",
     "Overload108Action",
     "Overload108EnvironmentState",

@@ -87,6 +87,7 @@ class Overload108Env:
         self._initial_full_state = self._spec.initial_state.model_copy(deep=True)
         self._full_state = self._spec.initial_state.model_copy(deep=True)
         self._state = self._build_state()
+        self._handoff_notes: list[str] = []
 
     def _build_state(self) -> Overload108EnvironmentState:
         fs = self._full_state.model_copy(deep=True)
@@ -117,6 +118,10 @@ class Overload108Env:
         self._spec = get_task_spec(self._task_name)
         self._initial_full_state = self._spec.initial_state.model_copy(deep=True)
         self._full_state = self._spec.initial_state.model_copy(deep=True)
+
+        if getattr(self, "_handoff_notes", []):
+            self._full_state.response_time_pressure = _clamp_unit_interval(self._full_state.response_time_pressure - 0.05)
+
         self._state = self._build_state()
         return self._state.observation.model_copy(deep=True)
 
@@ -126,6 +131,14 @@ class Overload108Env:
     def _apply_passive_dynamics(self, fs: Overload108FullState, step_count: int) -> None:
         """Apply passive dynamics every step regardless of action."""
         fs.operator_fatigue = _clamp_unit_interval(fs.operator_fatigue + 0.05)
+
+        panic_inc = 0.08 if fs.queue_length > 15 else 0.03
+        panic_dec = 0.05 if fs.ambulances_en_route > 3 else 0.0
+        fs.caller_panic = _clamp_unit_interval(fs.caller_panic + panic_inc - panic_dec)
+
+        for district in list(fs.district_load.keys()):
+            drift = self._rng.uniform(-0.05, 0.05)
+            fs.district_load[district] = _clamp_unit_interval(fs.district_load[district] + drift)
 
         is_surge = any(f in fs.event_flags for f in ("monsoon_surge", "mass_casualty"))
         fs.queue_length = max(0, fs.queue_length + self._rng.randint(0, 2 if is_surge else 1))
@@ -189,6 +202,7 @@ class Overload108Env:
             category = _safe_lower(params.get("severity_category") or params.get("category") or "")
             priority = _safe_lower(params.get("priority_level") or params.get("priority") or "medium")
             backup = bool(params.get("backup_requested", False))
+            district_param = _safe_lower(params.get("district") or "")
 
             if next_fs.ambulances_available > 0 and category in SEVERITY_CATEGORIES:
                 next_fs.ambulances_available -= 1
@@ -210,6 +224,16 @@ class Overload108Env:
                 if backup and next_fs.incident_cascade_risk > 0.6:
                     reward += 0.10
                     info["reward_components"]["backup_during_cascade"] = 0.10
+
+                if fs.caller_panic > 0.7:
+                    reward += 0.10
+                    info["reward_components"]["urgent_panic_response"] = 0.10
+
+                if district_param and district_param in next_fs.district_load:
+                    highest_load_district = max(next_fs.district_load.keys(), key=lambda d: next_fs.district_load[d])
+                    if district_param == highest_load_district:
+                        reward += 0.10
+                        info["reward_components"]["highest_load_district"] = 0.10
 
                 if priority == "low" and true_sev > 0.7:
                     reward -= 0.25
@@ -316,14 +340,20 @@ class Overload108Env:
             else:
                 reward -= 0.05
 
+            if fs.caller_panic > 0.6:
+                reward -= 0.15
+                info["reward_components"]["defer_high_panic"] = -0.15
+
             if len(reason) > 200:
                 reason = reason[:200]
 
         elif action_type == "request_mutual_aid":
             from_district = _safe_str(params.get("from_district") or "")
+            max_load = max(next_fs.district_load.values()) if next_fs.district_load else 0.0
             if next_fs.ambulances_available < 3:
-                reward += 0.20
-                info["reward_components"]["mutual_aid_needed"] = 0.20
+                bonus = 0.10 * max_load
+                reward += 0.20 + bonus
+                info["reward_components"]["mutual_aid_needed"] = 0.20 + bonus
                 next_fs.ambulances_available = min(20, next_fs.ambulances_available + 3)
             elif next_fs.ambulances_available > 10:
                 reward -= 0.10
@@ -332,11 +362,18 @@ class Overload108Env:
                 reward += 0.05
                 next_fs.ambulances_available = min(20, next_fs.ambulances_available + 1)
 
+        elif action_type == "deescalate_caller":
+            reward += 0.10
+            info["reward_components"]["caller_deescalated"] = 0.10
+            next_fs.caller_panic = _clamp_unit_interval(next_fs.caller_panic - 0.2)
+
         elif action_type == "close_shift":
             handoff = _safe_lower(params.get("handoff_quality") or "standard")
             if handoff == "thorough" and next_fs.streak > 3 and next_fs.operator_fatigue < 0.6:
                 reward += 0.35
                 info["reward_components"]["excellent_close"] = 0.35
+                if hasattr(self, "_handoff_notes"):
+                    self._handoff_notes.append(f"handoff_{step_count}")
             elif handoff == "standard":
                 reward += 0.10
                 info["reward_components"]["standard_close"] = 0.10
