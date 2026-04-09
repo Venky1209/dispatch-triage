@@ -1,0 +1,25 @@
+spec_version: 1
+name: overload-108
+version: "1.0.0"
+description: "108-Overload: National Emergency Ambulance Dispatch Simulator with hidden severity and passive dynamics."
+type: space
+runtime: fastapi
+app: "server.app:app"
+port: 7860
+tasks:
+  - id: EASY
+    task_name: EASY
+    difficulty: easy
+    grader: env.graders:grade_easy
+  - id: MEDIUM
+    task_name: MEDIUM
+    difficulty: medium
+    grader: env.graders:grade_medium
+  - id: HARD
+    task_name: HARD
+    difficulty: hard
+    grader: env.graders:grade_hard
+graders:
+  EASY: env.graders:grade_easy
+  MEDIUM: env.graders:grade_medium
+  HARD: env.graders:grade_hard
