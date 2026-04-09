@@ -8,7 +8,7 @@ pinned: false
 license: mit
 tags:
   - openenv
-short_description: "108-Overload: National Emergency Ambulance Dispatch Simulator"
+short_description: "108-Overload: Emergency Dispatch Simulator"
 ---
 
 <div align="center">
