@@ -2,16 +2,6 @@
   <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,14,20&height=200&section=header&text=108-Overload&fontSize=50&animation=fadeIn&fontAlignY=35&desc=National%20Emergency%20Ambulance%20Dispatch%20Simulator&descAlignY=55&descAlign=50" alt="108-Overload Header" />
 </div>
 
-<br>
-
-## ⯈ Live Demo
-<div align="center">
-  <img src="https://raw.githubusercontent.com/Venky1209/dispatch-triage/cb70167/demo.gif" alt="108-Overload Simulation Demo" width="100%" />
-  <p><i>High-stakes HARD task simulation: MASS CASUALTY + MONSOON SURGE</i></p>
-</div>
-
-<br>
-
 
 <div align="center">
   <img src="https://img.shields.io/badge/Python-3.11+-blue?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
@@ -63,6 +53,16 @@ No existing OpenEnv environment models this. Email triage, bug triage, incident 
 - **Hidden State (Information Asymmetry):** The agent sees `caller_severity_vector` — what the panicked caller *reports*. The environment tracks `true_severity` — what the patient *actually* has. These differ by up to ±0.2. The grader evaluates against ground truth, so an agent that blindly trusts caller reports will under-triage critical patients and get penalized.
 - **Passive Dynamics (Time Kills):** Every single `step()` — regardless of what action the agent takes — increases `operator_fatigue` by +0.05, grows the call queue, and compounds `incident_cascade_risk` if the queue exceeds 20. Doing nothing is actively punished. This is not a "choose the right answer" environment — it's a "choose the least-bad option under time pressure" environment.
 - **Anti-Exploit Design:** Graders evaluate behavioral criteria (did the agent triage 4+ categories? did it request mutual aid when fleet was depleted?) rather than just final-state outcomes. An anti-spam penalty reduces scores if any single action type exceeds 40% of the trajectory, preventing degenerate "spam dispatch" strategies.
+
+<br>
+
+## ⯈ Live Demo
+<div align="center">
+  <img src="https://raw.githubusercontent.com/Venky1209/dispatch-triage/cb70167/demo.gif" alt="108-Overload Simulation Demo" width="100%" />
+  <p><i>High-stakes HARD task simulation: MASS CASUALTY + MONSOON SURGE</i></p>
+</div>
+
+<br>
 
 ---
 
