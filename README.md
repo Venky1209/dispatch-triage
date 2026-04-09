@@ -6,7 +6,7 @@
 
 ## ⯈ Live Demo
 <div align="center">
-  <img src="https://raw.githubusercontent.com/Venky1209/dispatch-triage/main/demo.gif" alt="108-Overload Simulation Demo" width="100%" />
+  <img src="https://raw.githubusercontent.com/Venky1209/dispatch-triage/cb70167/demo.gif" alt="108-Overload Simulation Demo" width="100%" />
   <p><i>High-stakes HARD task simulation: MASS CASUALTY + MONSOON SURGE</i></p>
 </div>
 
