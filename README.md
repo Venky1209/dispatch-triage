@@ -15,6 +15,16 @@ short_description: "108-Overload: Emergency Dispatch Simulator"
   <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,14,20&height=200&section=header&text=108-Overload&fontSize=50&animation=fadeIn&fontAlignY=35&desc=National%20Emergency%20Ambulance%20Dispatch%20Simulator&descAlignY=55&descAlign=50" alt="108-Overload Header" />
 </div>
 
+<br>
+
+## 🎬 Live Demo
+<div align="center">
+  <img src="./demo.gif" alt="108-Overload Simulation Demo" width="100%" />
+  <p><i>High-stakes HARD task simulation: MASS CASUALTY + MONSOON SURGE</i></p>
+</div>
+
+<br>
+
 <div align="center">
   <img src="https://img.shields.io/badge/Python-3.11+-blue?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
   <img src="https://img.shields.io/badge/OpenEnv-v1.0-brightgreen?style=for-the-badge" alt="OpenEnv Spec" />
