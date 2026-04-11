@@ -22,7 +22,7 @@ India's 108 emergency ambulance service handles **94,000+ calls per day**, respo
 ## ⯈ Live Demo
 <div align="center">
   <img src="demo.gif" alt="108-Overload Simulation Demo" width="100%" />
-  <p><i>High-stakes HARD task simulation: MASS CASUALTY + MONSOON SURGE</i></p>
+  <p><i>High-stakes EASY task simulation </i></p>
 </div>
 
 ---
